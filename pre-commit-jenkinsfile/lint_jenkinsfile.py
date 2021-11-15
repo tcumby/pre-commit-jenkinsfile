@@ -1,16 +1,15 @@
 import argparse
 from enum import IntEnum
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence
 
 import urllib3
 from urllib3 import HTTPResponse
 
 
 class ErrorCodes(IntEnum):
-    OK = (0,)
-    NO_JENKINS_CRUMB = 1
-    HAD_ERRORS = 2
+    OK = 0
+    FAIL = 1
 
 
 def get_jenkins_crumb(jenkins_url: str) -> Optional[str]:
@@ -29,29 +28,51 @@ def get_jenkins_crumb(jenkins_url: str) -> Optional[str]:
     return crumb
 
 
-def lint_via_http(jenkins_url: str, filename: Path) -> Tuple[ErrorCodes, str]:
+def lint_via_http(jenkins_url: str, filenames: List[Path]) -> ErrorCodes:
     return_code: ErrorCodes.OK
-    error_message: str = ""
-
+    return_codes: List[ErrorCodes] = []
     header = get_jenkins_crumb(jenkins_url)
     if header:
         http = urllib3.PoolManager()
         request_url: str = f"{jenkins_url}/pipeline-model-converter/validate"
-        jenkinsfile_text: str = filename.read_text()
+        for filename in filenames:
+            return_code = http_validate(filename, header, http, request_url)
+            return_codes.append(return_code)
 
-        response: HTTPResponse = http.request_encode_body(
-            "POST",
-            request_url,
-            fields={"jenkinsfile": jenkinsfile_text},
-            headers=header,
+        return_code = (
+            ErrorCodes.OK if ErrorCodes.FAIL not in return_codes else ErrorCodes.FAIL
         )
     else:
-        return_code = ErrorCodes.NO_JENKINS_CRUMB
-        error_message = (
-            "No crumb was returned by the Jenkins server and so we cannot lint."
-        )
+        return_code = ErrorCodes.FAIL
+        print("No crumb was returned by the Jenkins server and so we cannot lint.")
 
-    return return_code, error_message
+    return return_code
+
+
+def http_validate(
+    filename: Path, header: str, http: urllib3.PoolManager, request_url: str
+) -> ErrorCodes:
+    return_code: ErrorCodes.OK
+
+    jenkinsfile_text: str = filename.read_text()
+    response: HTTPResponse = http.request_encode_body(
+        "POST",
+        request_url,
+        fields={"jenkinsfile": jenkinsfile_text},
+        headers=header,
+    )
+    message: str = response.decode_content()
+    if response.status == 200:
+        if "Error" in message:
+            print(message)
+            return_code = ErrorCodes.FAIL
+        else:
+            return_code = ErrorCodes.OK
+    else:
+        print(f"Connection failed: A status code of {response.status} was returned.")
+        return_code = ErrorCodes.FAIL
+
+    return return_code
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -64,8 +85,22 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         type=str,
         default="",
     )
+    parser.add_argument(
+        "--jenkins_sshd_port",
+        action="store",
+        help="The port number for your Jenkins controller",
+        type=str,
+        default="",
+    )
+    parser.add_argument(
+        "--jenkins_hostname",
+        action="store",
+        help="The hostname for your Jenkins controller",
+        type=str,
+        default="",
+    )
     args = parser.parse_args(argv)
-    return_value: int = 0
+    return_value: ErrorCodes = ErrorCodes.OK
 
     filenames: List[Path] = []
     if args.filenames:
@@ -74,6 +109,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     jenkins_url: str = ""
     if args.jenkins_url:
         jenkins_url = args.jenkins_url
+
+    jenkins_sshd_port: str = ""
+    if args.jenkins_sshd_port:
+        jenkins_sshd_port = args.jenkins_sshd_port
+
+    jenkins_hostname: str = ""
+    if args.jenkins_hostname:
+        jenkins_hostname = args.jenkins_hostname
+
+    if len(filenames) > 0:
+        if len(jenkins_url) > 0:
+            return_value = lint_via_http(jenkins_url, filenames)
+        elif len(jenkins_sshd_port) > 0 and len(jenkins_hostname) > 0:
+            pass
 
     return return_value
 
