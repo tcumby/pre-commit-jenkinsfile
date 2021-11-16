@@ -1,10 +1,18 @@
 import argparse
 from enum import IntEnum
 from pathlib import Path
+from socket import socket
 from typing import List, Optional, Sequence
 
+import paramiko
 import urllib3
 from urllib3 import HTTPResponse
+from paramiko import (
+    SSHClient,
+    SSHException,
+    BadHostKeyException,
+    AuthenticationException,
+)
 
 
 class ErrorCodes(IntEnum):
@@ -71,6 +79,60 @@ def http_validate(
     else:
         print(f"Connection failed: A status code of {response.status} was returned.")
         return_code = ErrorCodes.FAIL
+
+    return return_code
+
+
+def lint_via_ssh(
+    jenkins_hostname: str, jenkins_sshd_port: int, filenames: List[Path]
+) -> ErrorCodes:
+    return_code: ErrorCodes = ErrorCodes.FAIL
+    return_codes: List[ErrorCodes] = []
+
+    try:
+        with SSHClient() as client:
+            client.load_system_host_keys()
+            client.connect(jenkins_hostname, port=jenkins_sshd_port)
+            for filename in filenames:
+                return_code = ssh_validate(client, filename)
+                return_codes.append(return_code)
+
+    except BadHostKeyException as err:
+        print(
+            f"Connection to the server failed because the hostkey could not be verified:\n{str(err)}"
+        )
+    except AuthenticationException as err:
+        pass
+    except SSHException as err:
+        pass
+    except OSError as err:
+        # socket.error is a deprecated alias of OSError
+        pass
+
+    if len(return_codes) > 0:
+        return_code = (
+            ErrorCodes.OK if ErrorCodes.FAIL not in return_codes else ErrorCodes.FAIL
+        )
+
+    return return_code
+
+
+def ssh_validate(client: paramiko.SSHClient, filename: Path) -> ErrorCodes:
+    return_code: ErrorCodes = ErrorCodes.FAIL
+
+    if filename.exists():
+        try:
+            _, stdout_channel, stderr_channel = client.exec_command(
+                f"declarative-linter < {str(filename)}"
+            )
+            stdout: str = stdout_channel.read().decode()
+            stderr: str = stderr_channel.read().decode()
+        except SSHException as err:
+            print(
+                f'Failed to execute the "declarative-linter" command on the Jenkins server:\n{str(err)}'
+            )
+    else:
+        pass
 
     return return_code
 
