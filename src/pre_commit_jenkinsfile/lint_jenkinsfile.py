@@ -29,7 +29,7 @@ def get_jenkins_crumb(jenkins_url: str) -> Optional[str]:
 
 
 def lint_via_http(jenkins_url: str, filenames: List[Path]) -> ErrorCodes:
-    return_code: ErrorCodes.OK
+    return_code: ErrorCodes
     return_codes: List[ErrorCodes] = []
     header = get_jenkins_crumb(jenkins_url)
     if header:
@@ -52,7 +52,7 @@ def lint_via_http(jenkins_url: str, filenames: List[Path]) -> ErrorCodes:
 def http_validate(
     filename: Path, header: str, http: urllib3.PoolManager, request_url: str
 ) -> ErrorCodes:
-    return_code: ErrorCodes.OK
+    return_code: ErrorCodes
 
     jenkinsfile_text: str = filename.read_text()
     response: HTTPResponse = http.request_encode_body(
