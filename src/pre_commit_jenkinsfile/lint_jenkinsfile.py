@@ -130,12 +130,15 @@ def ssh_validate(client: paramiko.SSHClient, filename: Path) -> ErrorCodes:
             )
             stdout: str = stdout_channel.read().decode()
             stderr: str = stderr_channel.read().decode()
+
+            # TODO parse stdout/stderr
+
         except SSHException as err:
             print(
                 f'Failed to execute the "declarative-linter" command on the Jenkins server:\n{str(err)}'
             )
     else:
-        pass
+        print(f'The file "{str(filename)} does not exist.')
 
     return return_code
 
