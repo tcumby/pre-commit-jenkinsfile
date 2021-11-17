@@ -1,18 +1,17 @@
 import argparse
 from enum import IntEnum
 from pathlib import Path
-from socket import socket
 from typing import List, Optional, Sequence
 
 import paramiko
 import urllib3
-from urllib3 import HTTPResponse
 from paramiko import (
     SSHClient,
     SSHException,
     BadHostKeyException,
     AuthenticationException,
 )
+from urllib3 import HTTPResponse
 
 
 class ErrorCodes(IntEnum):
@@ -102,12 +101,16 @@ def lint_via_ssh(
             f"Connection to the server failed because the hostkey could not be verified:\n{str(err)}"
         )
     except AuthenticationException as err:
-        pass
+        print(f"Authentication with the server failed:\n{str(err)}")
     except SSHException as err:
-        pass
+        print(f"Error establishing an SSH connection: \n{str(err)}")
     except OSError as err:
         # socket.error is a deprecated alias of OSError
-        pass
+        print(
+            f"A socket error occurred during the attempt to connect to the server: \n{str(err)}"
+        )
+    except Exception as err:
+        print(f"An unexpected error occurred:\n{str(err)}")
 
     if len(return_codes) > 0:
         return_code = (
@@ -151,8 +154,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "--jenkins_sshd_port",
         action="store",
         help="The port number for your Jenkins controller",
-        type=str,
-        default="",
+        type=int,
+        default=22,
     )
     parser.add_argument(
         "--jenkins_hostname",
@@ -172,7 +175,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.jenkins_url:
         jenkins_url = args.jenkins_url
 
-    jenkins_sshd_port: str = ""
+    jenkins_sshd_port: int = 22
     if args.jenkins_sshd_port:
         jenkins_sshd_port = args.jenkins_sshd_port
 
@@ -183,8 +186,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if len(filenames) > 0:
         if len(jenkins_url) > 0:
             return_value = lint_via_http(jenkins_url, filenames)
-        elif len(jenkins_sshd_port) > 0 and len(jenkins_hostname) > 0:
-            pass
+        elif len(jenkins_hostname) > 0:
+            return_value = lint_via_ssh(jenkins_hostname, jenkins_sshd_port, filenames)
 
     return return_value
 
