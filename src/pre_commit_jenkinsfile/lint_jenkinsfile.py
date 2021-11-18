@@ -1,7 +1,7 @@
 import argparse
 from enum import IntEnum
 from pathlib import Path
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Dict
 
 import paramiko
 import urllib3
@@ -25,10 +25,11 @@ def get_jenkins_crumb(jenkins_url: str) -> Optional[str]:
     request_url: str = f'{jenkins_url}/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)'
     response: HTTPResponse = http.request("GET", request_url)
     if response.status == 200:
-        crumb = response.decode_content()
+        crumb = response.data.decode()
     else:
         print(
-            f"Requesting the crumb field from the Jenkins server failed with status {response.status}."
+            f"Requesting the crumb field from the Jenkins server failed with status {response.status}:"
+            f"\n{response.data.decode()}."
         )
         crumb = None
 
@@ -38,10 +39,13 @@ def get_jenkins_crumb(jenkins_url: str) -> Optional[str]:
 def lint_via_http(jenkins_url: str, filenames: List[Path]) -> ErrorCodes:
     return_code: ErrorCodes
     return_codes: List[ErrorCodes] = []
-    header = get_jenkins_crumb(jenkins_url)
-    if header:
+    crumb = get_jenkins_crumb(jenkins_url)
+    if crumb:
         http = urllib3.PoolManager()
         request_url: str = f"{jenkins_url}/pipeline-model-converter/validate"
+        header: Dict[str, str] = {}
+        crumb_parts = crumb.split(":")
+        header[crumb_parts[0]] = crumb_parts[1]
         for filename in filenames:
             return_code = http_validate(filename, header, http, request_url)
             return_codes.append(return_code)
@@ -57,7 +61,7 @@ def lint_via_http(jenkins_url: str, filenames: List[Path]) -> ErrorCodes:
 
 
 def http_validate(
-    filename: Path, header: str, http: urllib3.PoolManager, request_url: str
+    filename: Path, header: Dict[str, str], http: urllib3.PoolManager, request_url: str
 ) -> ErrorCodes:
     return_code: ErrorCodes
 
@@ -68,7 +72,7 @@ def http_validate(
         fields={"jenkinsfile": jenkinsfile_text},
         headers=header,
     )
-    message: str = response.decode_content()
+    message: str = response.data.decode()
     if response.status == 200:
         if "Error" in message:
             print(message)
