@@ -3,3 +3,5 @@ setuptools~=49.2.1
 
 paramiko~=2.8.0
 Sphinx~=4.3.0
+
+pytest~=6.2.5
