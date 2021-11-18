@@ -19,31 +19,54 @@ class ErrorCodes(IntEnum):
     FAIL = 1
 
 
-def get_jenkins_crumb(jenkins_url: str) -> Optional[str]:
+def get_jenkins_crumb(
+    jenkins_url: str, jenkins_login: str = "", jenkins_api_token: str = ""
+) -> Optional[str]:
     crumb: Optional[str]
     http = urllib3.PoolManager()
     request_url: str = f'{jenkins_url}/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)'
-    response: HTTPResponse = http.request("GET", request_url)
+    header: Dict[str, str] = {}
+    if len(jenkins_login) > 0 and len(jenkins_api_token) > 0:
+        header = urllib3.make_headers(basic_auth=f"{jenkins_login}:{jenkins_api_token}")
+    response: HTTPResponse = http.request("GET", request_url, headers=header)
     if response.status == 200:
         crumb = response.data.decode()
     else:
-        print(
-            f"Requesting the crumb field from the Jenkins server failed with status {response.status}:"
-            f"\n{response.data.decode()}."
-        )
+        response_message: str = response.data.decode()
+        if "Authentication required" in response_message:
+            print(
+                f"Requesting a crumb from the Jenkins server failed due to an authentication failure "
+                f"(status {response.status})."
+            )
+        else:
+            print(
+                f"Requesting the crumb field from the Jenkins server failed with status {response.status}:"
+                f"\n{response_message}."
+            )
         crumb = None
 
     return crumb
 
 
-def lint_via_http(jenkins_url: str, filenames: List[Path]) -> ErrorCodes:
+def lint_via_http(
+    filenames: List[Path],
+    jenkins_url: str,
+    jenkins_login: str = "",
+    jenkins_api_token: str = "",
+) -> ErrorCodes:
+
     return_code: ErrorCodes
     return_codes: List[ErrorCodes] = []
-    crumb = get_jenkins_crumb(jenkins_url)
+    crumb = get_jenkins_crumb(jenkins_url, jenkins_login, jenkins_api_token)
     if crumb:
         http = urllib3.PoolManager()
         request_url: str = f"{jenkins_url}/pipeline-model-converter/validate"
         header: Dict[str, str] = {}
+        if len(jenkins_login) > 0 and len(jenkins_api_token) > 0:
+            header = urllib3.make_headers(
+                basic_auth=f"{jenkins_login}:{jenkins_api_token}"
+            )
+
         crumb_parts = crumb.split(":")
         header[crumb_parts[0]] = crumb_parts[1]
         for filename in filenames:
@@ -192,7 +215,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     if len(filenames) > 0:
         if len(jenkins_url) > 0:
-            return_value = lint_via_http(jenkins_url, filenames)
+            return_value = lint_via_http(filenames, jenkins_url)
         elif len(jenkins_hostname) > 0:
             return_value = lint_via_ssh(jenkins_hostname, jenkins_sshd_port, filenames)
 
