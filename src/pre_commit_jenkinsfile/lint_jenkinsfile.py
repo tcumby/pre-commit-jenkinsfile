@@ -10,6 +10,7 @@ from paramiko import (
     SSHException,
     BadHostKeyException,
     AuthenticationException,
+    AutoAddPolicy,
 )
 from urllib3 import HTTPResponse
 
@@ -118,6 +119,7 @@ def lint_via_ssh(
 
     try:
         with SSHClient() as client:
+            client.set_missing_host_key_policy(AutoAddPolicy())
             client.load_system_host_keys()
             client.connect(jenkins_hostname, port=jenkins_sshd_port)
             for filename in filenames:
