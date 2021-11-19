@@ -61,16 +61,16 @@ def lint_via_http(
     if crumb:
         http = urllib3.PoolManager()
         request_url: str = f"{jenkins_url}/pipeline-model-converter/validate"
-        header: Dict[str, str] = {}
+        headers: Dict[str, str] = {}
         if len(jenkins_login) > 0 and len(jenkins_api_token) > 0:
-            header = urllib3.make_headers(
+            headers = urllib3.make_headers(
                 basic_auth=f"{jenkins_login}:{jenkins_api_token}"
             )
 
         crumb_parts = crumb.split(":")
-        header[crumb_parts[0]] = crumb_parts[1]
+        headers[crumb_parts[0]] = crumb_parts[1]
         for filename in filenames:
-            return_code = http_validate(filename, header, http, request_url)
+            return_code = http_validate(filename, headers, http, request_url)
             return_codes.append(return_code)
 
         return_code = (
@@ -84,7 +84,7 @@ def lint_via_http(
 
 
 def http_validate(
-    filename: Path, header: Dict[str, str], http: urllib3.PoolManager, request_url: str
+    filename: Path, headers: Dict[str, str], http: urllib3.PoolManager, request_url: str
 ) -> ErrorCodes:
     return_code: ErrorCodes
 
@@ -93,7 +93,7 @@ def http_validate(
         "POST",
         request_url,
         fields={"jenkinsfile": jenkinsfile_text},
-        headers=header,
+        headers=headers,
     )
     message: str = response.data.decode()
     if response.status == 200:
