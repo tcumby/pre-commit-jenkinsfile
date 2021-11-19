@@ -98,6 +98,7 @@ def http_validate(
     message: str = response.data.decode()
     if response.status == 200:
         if "Error" in message:
+            print(filename)
             print(message)
             return_code = ErrorCodes.FAIL
         else:
@@ -110,7 +111,7 @@ def http_validate(
 
 
 def lint_via_ssh(
-    jenkins_hostname: str, jenkins_sshd_port: int, filenames: List[Path]
+    filenames: List[Path], jenkins_hostname: str, jenkins_sshd_port: int
 ) -> ErrorCodes:
     return_code: ErrorCodes = ErrorCodes.FAIL
     return_codes: List[ErrorCodes] = []
@@ -152,13 +153,23 @@ def ssh_validate(client: paramiko.SSHClient, filename: Path) -> ErrorCodes:
 
     if filename.exists():
         try:
-            _, stdout_channel, stderr_channel = client.exec_command(
-                f"declarative-linter < {str(filename)}"
+            stdin_channel, stdout_channel, stderr_channel = client.exec_command(
+                f"declarative-linter"
             )
+
+            # Write the file contents to stdin; declarative-linter will wait for stdin input
+            stdin_channel.channel.send(filename.read_bytes())
+            stdin_channel.channel.shutdown_write()
+
+            # Block until finished
+            exit_status: int = stdout_channel.channel.recv_exit_status()
             stdout: str = stdout_channel.read().decode()
             stderr: str = stderr_channel.read().decode()
 
-            # TODO parse stdout/stderr
+            return_code = ErrorCodes.OK if 0 == exit_status else ErrorCodes.FAIL
+            if ErrorCodes.FAIL == return_code:
+                print(filename)
+                print(stdout)
 
         except SSHException as err:
             print(
@@ -217,7 +228,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if len(jenkins_url) > 0:
             return_value = lint_via_http(filenames, jenkins_url)
         elif len(jenkins_hostname) > 0:
-            return_value = lint_via_ssh(jenkins_hostname, jenkins_sshd_port, filenames)
+            return_value = lint_via_ssh(filenames, jenkins_hostname, jenkins_sshd_port)
 
     return return_value
 
