@@ -14,6 +14,8 @@ from paramiko import (
 )
 from urllib3 import HTTPResponse
 
+from src.pre_commit_jenkinsfile.config import Config
+
 
 class ErrorCodes(IntEnum):
     OK = 0
@@ -112,7 +114,7 @@ def http_validate(
 
 
 def lint_via_ssh(
-    filenames: List[Path], jenkins_hostname: str, jenkins_sshd_port: int
+    filenames: List[Path], jenkins_hostname: str, jenkins_jenkins_ssh_port: int
 ) -> ErrorCodes:
     return_code: ErrorCodes = ErrorCodes.FAIL
     return_codes: List[ErrorCodes] = []
@@ -121,7 +123,7 @@ def lint_via_ssh(
         with SSHClient() as client:
             client.set_missing_host_key_policy(AutoAddPolicy())
             client.load_system_host_keys()
-            client.connect(jenkins_hostname, port=jenkins_sshd_port)
+            client.connect(jenkins_hostname, port=jenkins_jenkins_ssh_port)
             for filename in filenames:
                 return_code = ssh_validate(client, filename)
                 return_codes.append(return_code)
@@ -194,16 +196,38 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         default="",
     )
     parser.add_argument(
-        "--jenkins_sshd_port",
+        "--jenkins_login",
         action="store",
-        help="The port number for your Jenkins controller",
+        help="The user login to the Jenkins controller.",
+        type=str,
+        default="",
+    )
+    parser.add_argument(
+        "--jenkins_api_token",
+        action="store",
+        help="The API token for the user account on the Jenkins controller",
+        type=str,
+        default="",
+    )
+    parser.add_argument(
+        "--jenkins_ssh_port",
+        action="store",
+        help="The ssh port number for your Jenkins controller",
         type=int,
         default=22,
     )
     parser.add_argument(
         "--jenkins_hostname",
         action="store",
-        help="The hostname for your Jenkins controller",
+        help="The ssh hostname for your Jenkins controller",
+        type=str,
+        default="",
+    )
+
+    parser.add_argument(
+        "--config",
+        action="store",
+        help="A file path (absolute or relative) to an INI file.",
         type=str,
         default="",
     )
@@ -214,23 +238,36 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if args.filenames:
         filenames = args.filenames
 
-    jenkins_url: str = ""
-    if args.jenkins_url:
-        jenkins_url = args.jenkins_url
-
-    jenkins_sshd_port: int = 22
-    if args.jenkins_sshd_port:
-        jenkins_sshd_port = args.jenkins_sshd_port
-
-    jenkins_hostname: str = ""
-    if args.jenkins_hostname:
-        jenkins_hostname = args.jenkins_hostname
+    config: Config
+    if len(args.config) > 0:
+        config_file_path: Path = Path(args.config).resolve()
+        if config_file_path.exists() and config_file_path.is_file():
+            config = Config.load_file(config_file_path)
+        else:
+            print(
+                f"Could not find the config file {config_file_path} or the path does not point to a file"
+            )
+    else:
+        config = Config(
+            args.jenkins_url,
+            args.jenkins_login,
+            args.jenkins_api_token,
+            args.jenkins_hostname,
+            args.jenkins_ssh_port,
+        )
 
     if len(filenames) > 0:
-        if len(jenkins_url) > 0:
-            return_value = lint_via_http(filenames, jenkins_url)
-        elif len(jenkins_hostname) > 0:
-            return_value = lint_via_ssh(filenames, jenkins_hostname, jenkins_sshd_port)
+        if config.has_http_creds():
+            return_value = lint_via_http(
+                filenames,
+                config.jenkins_url,
+                config.jenkins_login,
+                config.jenkins_api_token,
+            )
+        elif config.has_ssh_creds():
+            return_value = lint_via_ssh(
+                filenames, config.jenkins_hostname, config.jenkins_ssh_port
+            )
 
     return return_value
 
