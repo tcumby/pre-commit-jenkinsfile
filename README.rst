@@ -33,8 +33,9 @@
 pre-commit-jenkinsfile
 ======================
 
-
-    Add a short description here!
+    A `pre-commit`_ hook script for linting `Jenkinsfile`_ declarative pipelines.
+.. _pre-commit: https://pre-commit.com/
+.. _Jenkinsfile: https://www.jenkins.io/doc/book/pipeline/syntax/
 
 
 A longer description of your project goes here...
