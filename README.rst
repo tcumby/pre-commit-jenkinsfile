@@ -27,7 +27,9 @@
     :alt: Project generated with PyScaffold
     :target: https://pyscaffold.org/
 
-|
+.. image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white
+   :target: https://github.com/pre-commit/pre-commit
+   :alt: pre-commit
 
 ======================
 pre-commit-jenkinsfile
@@ -38,7 +40,7 @@ pre-commit-jenkinsfile
 .. _Jenkinsfile: https://www.jenkins.io/doc/book/pipeline/syntax/
 
 
-A longer description of your project goes here...
+
 
 
 .. _pyscaffold-notes:
