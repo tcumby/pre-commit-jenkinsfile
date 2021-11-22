@@ -1,7 +1,7 @@
 -   id: lint-jenkinsfile
     name: Lint Jenkinsfile(s)
     description: This hook validates Jenkins declarative pipeline files using a Jenkins server.
-    entry: lint_jenkinsfile
+    entry: lint-jenkinsfile
     language: python
     file: ^[Jj]enkins[fF]ile
     types: [text]
