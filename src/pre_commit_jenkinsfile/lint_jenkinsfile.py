@@ -23,7 +23,7 @@ class ErrorCodes(IntEnum):
 
 
 def get_jenkins_crumb(
-    jenkins_url: str, jenkins_login: str = "", jenkins_api_token: str = ""
+    jenkins_url: str, jenkins_login: str, jenkins_api_token: str
 ) -> Optional[str]:
     crumb: Optional[str]
     http = urllib3.PoolManager()
@@ -54,8 +54,8 @@ def get_jenkins_crumb(
 def lint_via_http(
     filenames: List[Path],
     jenkins_url: str,
-    jenkins_login: str = "",
-    jenkins_api_token: str = "",
+    jenkins_login: str,
+    jenkins_api_token: str,
 ) -> ErrorCodes:
 
     return_code: ErrorCodes
@@ -158,7 +158,7 @@ def ssh_validate(client: paramiko.SSHClient, filename: Path) -> ErrorCodes:
     if filename.exists():
         try:
             stdin_channel, stdout_channel, stderr_channel = client.exec_command(
-                f"declarative-linter"
+                "declarative-linter"
             )
 
             # Write the file contents to stdin; declarative-linter will wait for stdin input
@@ -168,7 +168,6 @@ def ssh_validate(client: paramiko.SSHClient, filename: Path) -> ErrorCodes:
             # Block until finished
             exit_status: int = stdout_channel.channel.recv_exit_status()
             stdout: str = stdout_channel.read().decode()
-            stderr: str = stderr_channel.read().decode()
 
             return_code = ErrorCodes.OK if 0 == exit_status else ErrorCodes.FAIL
             if ErrorCodes.FAIL == return_code:
@@ -244,6 +243,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         if config_file_path.exists() and config_file_path.is_file():
             config = Config.load_file(config_file_path)
         else:
+            config = Config()
             print(
                 f"Could not find the config file {config_file_path} or the path does not point to a file"
             )
