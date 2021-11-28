@@ -19,9 +19,7 @@
     .. image:: https://pepy.tech/badge/pre-commit-jenkinsfile/month
         :alt: Monthly Downloads
         :target: https://pepy.tech/project/pre-commit-jenkinsfile
-    .. image:: https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Twitter
-        :alt: Twitter
-        :target: https://twitter.com/pre-commit-jenkinsfile
+
 
 .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
     :alt: Project generated with PyScaffold
@@ -78,14 +76,3 @@ The following are the allow sections and keys for the config file:
       port = <port>
 
 Note that is only necessary to specify the keys in the **http** or **ssh** section.
-
-
-
-
-.. _pyscaffold-notes:
-
-Note
-====
-
-This project has been set up using PyScaffold 4.1.1. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
