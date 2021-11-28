@@ -34,4 +34,4 @@ repos:
     hooks:
       - id: bandit
         exclude: ^test_*
-        args: [ -c .bandit]
+        args: [ --skip, 'B601']
