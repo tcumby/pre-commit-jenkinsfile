@@ -55,20 +55,22 @@ ____
 
 HTTP Access Options
 ~~~~
+
 --jenkins_url <url>           The URL for the Jenkins server.
 --jenkin_login <login>        The login for an account on the Jenkins server.
 --jenkins_api_token <token>   The API token for the account on the Jenkins server.
 
 SSH Access Options
 ~~~~
---jenkins_hostname <hostname>       The hostname for the Jenkins server.
---jenkins_ssh_port <port number>    The SSH port number for the Jenkins server. Default is 22.
+
+--jenkins_hostname <hostname>     The hostname for the Jenkins server.
+--jenkins_ssh_port <port>         The SSH port number for the Jenkins server. Default is 22.
 
 Config File Option
 ~~~~
 Alternatively, these settings can be specified in an INI formatted file
 
---config <file path>    An absolute or relative file path.
+--config <file>                  An absolute or relative file path.
 
 Config File Syntax
 ~~~~
