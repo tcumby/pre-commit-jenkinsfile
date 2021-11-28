@@ -29,6 +29,9 @@
    :target: https://github.com/pre-commit/pre-commit
    :alt: pre-commit
 
+.. image:: https://img.shields.io/badge/security-bandit-yellow.svg
+    :target: https://github.com/PyCQA/bandit
+    :alt: Security Status
 ======================
 pre-commit-jenkinsfile
 ======================
