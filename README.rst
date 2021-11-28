@@ -20,6 +20,8 @@
         :alt: Monthly Downloads
         :target: https://pepy.tech/project/pre-commit-jenkinsfile
 
+.. image:: https://img.shields.io/badge/python-3.8%2B-blue
+    :alt: supported python versions
 
 .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
     :alt: Project generated with PyScaffold
@@ -32,6 +34,10 @@
 .. image:: https://img.shields.io/badge/security-bandit-yellow.svg
     :target: https://github.com/PyCQA/bandit
     :alt: Security Status
+
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
+   :alt: Code Style: Black
 ======================
 pre-commit-jenkinsfile
 ======================
