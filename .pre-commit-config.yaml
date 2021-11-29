@@ -24,6 +24,9 @@ repos:
     hooks:
       - id: python-check-blanket-noqa
       - id: python-check-blanket-type-ignore
+      - id: rst-backticks
+      - id: rst-directive-colons
+      - id: rst-inline-touching-normal
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.29.1
     hooks:
