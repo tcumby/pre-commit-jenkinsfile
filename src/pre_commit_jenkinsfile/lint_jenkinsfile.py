@@ -186,7 +186,7 @@ def ssh_validate(client: paramiko.SSHClient, filename: Path) -> ErrorCodes:
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("filenames", nargs="*", type=Path)
+
     parser.add_argument(
         "--jenkins_url",
         action="store",
@@ -230,6 +230,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         type=str,
         default="",
     )
+    parser.add_argument("filenames", nargs="*", type=Path)
     args = parser.parse_args(argv)
     return_value: ErrorCodes = ErrorCodes.OK
 
