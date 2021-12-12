@@ -68,3 +68,15 @@ The following are the allow sections and keys for the config file:
       port = <port>
 
 Note that is only necessary to specify the keys in the **http** or **ssh** section.
+
+
+Using with pre-commit
+=====================
+To use with pre-commit, add the following to your .pre-commit-config.yaml file:
+
+::
+
+    - repo: https://github.com/tcumby/pre-commit-jenkinsfile
+      rev: master
+      hooks:
+       - id: lint-jenkinsfile
